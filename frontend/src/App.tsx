@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 
 // API base URL - use localhost for local development
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 
-  (import.meta.env.MODE === "development" 
-    ? "http://localhost:3000" 
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.MODE === "development"
+    ? "http://localhost:3000"
     : "https://mindxapi06.azurewebsites.net");
 
 function App() {
@@ -29,7 +29,6 @@ function App() {
     const tokenFromURL = urlParams.get("token");
 
     if (tokenFromURL) {
-      console.log("✅ Token found in URL - storing in localStorage and fetching dashboard");
       // Store token in localStorage (as per task requirements: "persist across browser sessions")
       localStorage.setItem("token", tokenFromURL);
       // Clear URL params
@@ -40,11 +39,9 @@ function App() {
       // Check if token exists in localStorage (persist across sessions)
       const storedToken = localStorage.getItem("token");
       if (storedToken) {
-        console.log("🔍 Token found in localStorage - validating and fetching dashboard");
         // Validate token by fetching dashboard
         fetchDashboardData(storedToken);
       } else {
-        console.log("🚫 No token found - showing login screen");
         // No token - show login screen
         setUser(null);
         setDashboardData(null);
@@ -54,14 +51,12 @@ function App() {
 
   // OpenID Login - Redirect to backend auth endpoint
   const handleLogin = () => {
-    console.log("🔐 Login button clicked");
     // Clear any existing token and state before login
     localStorage.removeItem("token");
     setUser(null);
     setDashboardData(null);
     // Redirect to backend OpenID login endpoint
     const loginUrl = `${API_BASE_URL}/auth/login`;
-    console.log("🔄 Redirecting to:", loginUrl);
     window.location.href = loginUrl;
   };
 
@@ -115,10 +110,8 @@ function App() {
   };
 
   const handleLogout = () => {
-    console.log("🚪 Logout button clicked");
     // Clear token from localStorage
     localStorage.removeItem("token");
-    console.log("✅ Token removed from localStorage");
     // Clear state
     setUser(null);
     setDashboardData(null);

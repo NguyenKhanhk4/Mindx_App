@@ -29,10 +29,10 @@ app.use(
     secret: process.env.SESSION_SECRET || "mindx-secret-key",
     resave: false,
     saveUninitialized: false,
-    cookie: { 
+    cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
   })
 );
@@ -67,20 +67,18 @@ passport.use(
       idProfile: any,
       done: (error: any, user?: any) => void
     ) => {
-      console.log("✅ OpenID authentication successful");
-      console.log("Profile:", JSON.stringify(profile, null, 2));
-      console.log("Context:", JSON.stringify(context, null, 2));
-      console.log("ID Profile:", JSON.stringify(idProfile, null, 2));
-      
       // Extract user info from profile or idProfile
       const userInfo = {
         id: profile.id || idProfile?.sub || profile._json?.sub,
-        email: profile.emails?.[0]?.value || profile._json?.email || idProfile?.email,
-        displayName: profile.displayName || profile._json?.name || idProfile?.name,
+        email:
+          profile.emails?.[0]?.value ||
+          profile._json?.email ||
+          idProfile?.email,
+        displayName:
+          profile.displayName || profile._json?.name || idProfile?.name,
         name: profile.name || profile._json?.name || idProfile?.name,
       };
-      
-      console.log("Extracted user info:", JSON.stringify(userInfo, null, 2));
+
       return done(null, userInfo);
     }
   )
@@ -134,15 +132,12 @@ const authMiddleware = (req: any, res: any, next: any) => {
 
 // OpenID Authentication Routes
 app.get("/auth/login", (req, res, next) => {
-  console.log("🔐 Starting OpenID authentication...");
   passport.authenticate("openidconnect")(req, res, next);
 });
 
 app.get(
   "/auth/callback",
   (req, res, next) => {
-    console.log("📞 Received callback from OpenID provider");
-    console.log("Query params:", req.query);
     next();
   },
   passport.authenticate("openidconnect", {
@@ -150,8 +145,6 @@ app.get(
     failureMessage: true,
   }),
   (req: any, res) => {
-    console.log("✅ Authentication successful, generating JWT...");
-    
     // Generate JWT token for the authenticated user
     const token = jwt.sign(
       {
@@ -163,7 +156,6 @@ app.get(
       { expiresIn: "24h" }
     );
 
-    console.log("🎫 JWT token generated, redirecting to frontend...");
     // Redirect to frontend with token (root path, not /auth/success)
     const frontendURL = process.env.FRONTEND_URL || "http://localhost:5173";
     res.redirect(`${frontendURL}?token=${token}`);
@@ -232,7 +224,5 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 MindX API Server running on port ${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
-  console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+  // Server started
 });
