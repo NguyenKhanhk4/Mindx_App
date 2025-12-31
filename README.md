@@ -528,7 +528,7 @@ kubectl logs -n ingress-nginx deployment/nginx-ingress-ingress-nginx-controller
 
 ## 👥 Team
 
-- **Developer**: Your Name
+- **Developer**: Nguyễn Văn Khánh
 - **Project**: MindX Engineer Onboarding - Week 1
 - **Date**: December 2025
 
