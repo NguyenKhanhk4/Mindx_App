@@ -4,6 +4,26 @@ import session from "express-session";
 import passport from "passport";
 import { Strategy as OpenIDConnectStrategy } from "passport-openidconnect";
 import jwt from "jsonwebtoken";
+import * as appInsights from "applicationinsights";
+
+// [Week 2] Setup Azure Application Insights
+if (process.env.APPINSIGHTS_CONNECTION_STRING) {
+  appInsights
+    .setup(process.env.APPINSIGHTS_CONNECTION_STRING)
+    .setAutoDependencyCorrelation(true)
+    .setAutoCollectRequests(true)
+    .setAutoCollectPerformance(true, true)
+    .setAutoCollectExceptions(true)
+    .setAutoCollectDependencies(true)
+    .setAutoCollectConsole(true, false)
+    .setUseDiskRetryCaching(true)
+    .setSendLiveMetrics(true)
+    .start();
+
+  console.log("✅ Azure Application Insights with Live Metrics enabled");
+} else {
+  console.warn("⚠️  APPINSIGHTS_CONNECTION_STRING not set - metrics disabled");
+}
 
 // Extend Express Request type to include user
 declare global {
@@ -94,12 +114,25 @@ passport.deserializeUser((user: any, done) => {
 
 // [Task 1.1] Health Check - Required for Kubernetes probes
 app.get("/health", (req, res) => {
+  // Track health check
+  appInsights.defaultClient?.trackEvent({
+    name: "HealthCheck",
+    properties: { status: "UP" },
+  });
+
   res.json({
     status: "UP",
     message: "MindX API is running",
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || "development",
   });
+});
+
+// [Week 2] Test endpoint for slow response alert
+app.get("/api/slow", async (req, res) => {
+  const delay = parseInt(req.query.delay as string) || 3000;
+  await new Promise((resolve) => setTimeout(resolve, delay));
+  res.json({ message: "Slow response test", delay });
 });
 
 // [Task 5.2] Authentication Middleware with JWT
@@ -132,7 +165,14 @@ const authMiddleware = (req: any, res: any, next: any) => {
 
 // OpenID Authentication Routes
 app.get("/auth/login", (req, res, next) => {
-  passport.authenticate("openidconnect")(req, res, next);
+  appInsights.defaultClient?.trackEvent({
+    name: "LoginAttempt",
+    properties: { method: "OpenID" },
+  });
+  // Add prompt=login to force re-authentication
+  passport.authenticate("openidconnect", {
+    prompt: "login",
+  })(req, res, next);
 });
 
 app.get(
@@ -145,6 +185,15 @@ app.get(
     failureMessage: true,
   }),
   (req: any, res) => {
+    // Track successful authentication
+    appInsights.defaultClient?.trackEvent({
+      name: "LoginSuccess",
+      properties: {
+        userId: req.user.id,
+        email: req.user.email,
+      },
+    });
+
     // Generate JWT token for the authenticated user
     const token = jwt.sign(
       {
@@ -164,6 +213,12 @@ app.get(
 
 app.get("/auth/error", (req, res) => {
   console.error("❌ Authentication error:", req.session);
+
+  appInsights.defaultClient?.trackException({
+    exception: new Error("Authentication failed"),
+    properties: { details: req.query },
+  });
+
   res.status(401).json({
     error: "Authentication failed",
     message: "Failed to authenticate with OpenID provider",
@@ -176,7 +231,14 @@ app.get("/auth/logout", (req: any, res) => {
     if (err) {
       return res.status(500).json({ error: "Logout failed" });
     }
-    res.json({ success: true, message: "Logged out successfully" });
+    // Clear session completely
+    req.session.destroy(() => {
+      // Clear cookies
+      res.clearCookie("connect.sid");
+      // Redirect to frontend
+      const frontendURL = process.env.FRONTEND_URL || "http://localhost:5173";
+      res.redirect(frontendURL);
+    });
   });
 });
 
@@ -192,6 +254,14 @@ app.get("/api/info", (req, res) => {
 
 // Protected API endpoint - requires authentication
 app.get("/api/dashboard", authMiddleware, (req, res) => {
+  appInsights.defaultClient?.trackEvent({
+    name: "DashboardAccess",
+    properties: {
+      userId: (req as any).user?.id,
+      email: (req as any).user?.email,
+    },
+  });
+
   res.json({
     success: true,
     message: "Welcome to protected dashboard",
@@ -224,5 +294,10 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  // Server started
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(
+    `📊 Metrics: ${
+      process.env.APPINSIGHTS_CONNECTION_STRING ? "Enabled" : "Disabled"
+    }`
+  );
 });
