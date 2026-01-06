@@ -18,7 +18,7 @@ spec:
         - name: acr-secret
       containers:
         - name: backend
-          image: mindxregistry06.azurecr.io/mindxapi06:latest
+          image: mindxregistry06.azurecr.io/mindx-backend:latest
           ports:
             - containerPort: 3000
           env:
@@ -27,7 +27,7 @@ spec:
             - name: NODE_ENV
               value: "production"
             - name: FRONTEND_URL
-              value: "https://mindx.example.com" # Update with your domain
+              value: "https://20.18.237.151.nip.io" # Frontend Kubernetes domain for CORS
             - name: SESSION_SECRET
               valueFrom:
                 secretKeyRef:
@@ -46,7 +46,13 @@ spec:
                   name: mindx-secrets
                   key: openid-secret
             - name: OPENID_CALLBACK_URL
-              value: "https://mindx.example.com/auth/callback" # Update with your domain
+              value: "https://mindxapi06.azurewebsites.net/auth/callback" # Registered redirect URI in OpenID
+            # Week 2: Azure Application Insights
+            - name: APPINSIGHTS_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: mindx-secrets
+                  key: appinsights-connection-string
           resources:
             requests:
               memory: "128Mi"
