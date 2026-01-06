@@ -6,83 +6,83 @@
 
 ## Authentication Flow Diagram
 
-```
-┌─────────────┐                                           ┌─────────────────┐
-│   Browser   │                                           │  OpenID Provider│
-│   (User)    │                                           │ id-dev.mindx.edu│
-└──────┬──────┘                                           └────────┬────────┘
-       │                                                            │
-       │ 1. Click "Login"                                          │
-       │────────────────────────────────────────►                  │
-       │                                        │                  │
-       │                          ┌─────────────▼─────────────┐    │
-       │                          │      Frontend React       │    │
-       │                          │  (http://localhost:5173)  │    │
-       │                          └─────────────┬─────────────┘    │
-       │                                        │                  │
-       │ 2. Redirect to /auth/login             │                  │
-       │◄───────────────────────────────────────┘                  │
-       │                                                            │
-       │ 3. Request /auth/login                                    │
-       │─────────────────────────────────────────────────►         │
-       │                                      ┌───────────▼────────┴──┐
-       │                                      │   Backend API         │
-       │                                      │  (Express + Passport) │
-       │                                      └───────────┬───────────┘
-       │                                                  │
-       │ 4. Redirect to OpenID Provider                  │
-       │◄─────────────────────────────────────────────────┘
-       │  (https://id-dev.mindx.edu.vn/auth?...)
-       │                                                            │
-       │ 5. Redirect to OpenID Login                               │
-       │────────────────────────────────────────────────────────────►
-       │                                                            │
-       │                    6. User enters credentials             │
-       │                       (email + password)                  │
-       │◄───────────────────────────────────────────────────────────┤
-       │                                                            │
-       │ 7. OpenID validates & redirects back                      │
-       │    to callback URL with authorization code                │
-       │◄───────────────────────────────────────────────────────────┤
-       │  (https://.../auth/callback?code=xxx)                     │
-       │                                                            │
-       │ 8. Backend receives callback                              │
-       │─────────────────────────────────────────────────►         │
-       │                                      ┌───────────▼─────────┐
-       │                                      │   Backend API       │
-       │                                      │  Exchange code for  │
-       │                                      │  user info (ID token)│
-       │                                      └───────────┬─────────┘
-       │                                                  │
-       │                         9. Backend generates JWT token     │
-       │                            with user info                  │
-       │                                                  │
-       │ 10. Redirect to Frontend with JWT token         │
-       │◄─────────────────────────────────────────────────┘
-       │  (https://.../?token=eyJhbGc...)
-       │
-       │                          ┌─────────────▼─────────────┐
-       │                          │      Frontend React       │
-       │                          │  Store token in           │
-       │                          │  localStorage             │
-       │                          └─────────────┬─────────────┘
-       │                                        │
-       │ 11. Access protected pages             │
-       │     Include token in API requests      │
-       │────────────────────────────────────────►
-       │     Authorization: Bearer eyJhbGc...   │
-       │                                        │
-       │                          ┌─────────────▼─────────────┐
-       │                          │   Backend API             │
-       │                          │  Validate JWT token       │
-       │                          │  Return protected data    │
-       │                          └─────────────┬─────────────┘
-       │                                        │
-       │ 12. Protected data returned            │
-       │◄───────────────────────────────────────┘
-       │  { user: {...}, data: {...} }
-       │
-```
+┌─────────────┐ ┌─────────────────┐
+│ Browser │ │ OpenID Provider│
+│ (User) │ │ id-dev.mindx.edu│
+└──────┬──────┘ └────────┬────────┘
+│ │
+│ 1. Click "Login" │
+│────────────────────────────────────────► │
+│ │ │
+│ ┌─────────────▼─────────────┐ │
+│ │ Frontend React │ │
+│ │ (http://localhost:5173) │ │
+│ └─────────────┬─────────────┘ │
+│ │ │
+│ 2. Redirect to /auth/login │ │
+│◄───────────────────────────────────────┘ │
+│ │
+│ 3. Request /auth/login │
+│─────────────────────────────────────────────────► │
+│ ┌───────────▼────────┴──┐
+│ │ Backend API │
+│ │ (Express + Passport) │
+│ └───────────┬───────────┘
+│ │
+│ 4. Redirect to OpenID Provider │
+│◄─────────────────────────────────────────────────┘
+│ (https://id-dev.mindx.edu.vn/auth?...)
+│ │
+│ 5. Redirect to OpenID Login │
+│────────────────────────────────────────────────────────────►
+│ │
+│ 6. User enters credentials │
+│ (email + password) │
+│◄───────────────────────────────────────────────────────────┤
+│ │
+│ 7. OpenID validates & redirects back │
+│ to callback URL with authorization code │
+│◄───────────────────────────────────────────────────────────┤
+│ (https://.../auth/callback?code=xxx) │
+│ │
+│ 8. Backend receives callback │
+│─────────────────────────────────────────────────► │
+│ ┌───────────▼─────────┐
+│ │ Backend API │
+│ │ Exchange code for │
+│ │ user info (ID token)│
+│ └───────────┬─────────┘
+│ │
+│ 9. Backend generates JWT token │
+│ with user info │
+│ │
+│ 10. Redirect to Frontend with JWT token │
+│◄─────────────────────────────────────────────────┘
+│ (https://.../?token=eyJhbGc...)
+│
+│ ┌─────────────▼─────────────┐
+│ │ Frontend React │
+│ │ Store token in │
+│ │ localStorage │
+│ └─────────────┬─────────────┘
+│ │
+│ 11. Access protected pages │
+│ Include token in API requests │
+│────────────────────────────────────────►
+│ Authorization: Bearer eyJhbGc... │
+│ │
+│ ┌─────────────▼─────────────┐
+│ │ Backend API │
+│ │ Validate JWT token │
+│ │ Return protected data │
+│ └─────────────┬─────────────┘
+│ │
+│ 12. Protected data returned │
+│◄───────────────────────────────────────┘
+│ { user: {...}, data: {...} }
+│
+
+````
 
 ## Detailed Flow Steps
 
@@ -95,7 +95,7 @@ const handleLogin = () => {
   // Redirect đến backend login endpoint
   window.location.href = `${API_URL}/auth/login`;
 };
-```
+````
 
 ### 2. Backend Initiates OpenID Authentication
 
