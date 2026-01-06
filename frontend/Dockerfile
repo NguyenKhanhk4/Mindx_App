@@ -4,6 +4,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+# Build-time environment variables (Week 2)
+ARG VITE_API_URL
+ARG VITE_GA_MEASUREMENT_ID
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_GA_MEASUREMENT_ID=$VITE_GA_MEASUREMENT_ID
 RUN npm run build
 
 # Stage 2: Serve with Nginx

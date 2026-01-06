@@ -1,4 +1,11 @@
 import { useState, useEffect } from "react";
+import {
+  trackPageView,
+  trackLogin,
+  trackLogout,
+  trackDashboardView,
+  trackError,
+} from "./analytics";
 
 // API base URL - use localhost for local development
 const API_BASE_URL =
@@ -19,10 +26,16 @@ function App() {
 
   // Check API health on mount
   useEffect(() => {
+    // Track page view
+    trackPageView(window.location.pathname);
+
     fetch(`${API_BASE_URL}/api/info`)
       .then((res) => res.json())
       .then((data) => setApiHealth(`✅ Connected - ${data.app}`))
-      .catch(() => setApiHealth("❌ API Unavailable"));
+      .catch(() => {
+        setApiHealth("❌ API Unavailable");
+        trackError("API Connection", "Failed to connect to API");
+      });
 
     // Check if returning from OpenID callback
     const urlParams = new URLSearchParams(window.location.search);
@@ -33,6 +46,8 @@ function App() {
       localStorage.setItem("token", tokenFromURL);
       // Clear URL params
       window.history.replaceState({}, document.title, window.location.pathname);
+      // Track successful login
+      trackLogin("OpenID");
       // Fetch user data with token from URL
       fetchDashboardData(tokenFromURL);
     } else {
@@ -93,6 +108,8 @@ function App() {
             avatar: data.user.name?.charAt(0).toUpperCase() || "U",
           });
           setDashboardData(data.data);
+          // Track dashboard view
+          trackDashboardView();
         } else {
           // Invalid response, clear token
           localStorage.removeItem("token");
@@ -102,6 +119,7 @@ function App() {
       })
       .catch((err) => {
         console.error("Failed to fetch dashboard:", err);
+        trackError("Dashboard Fetch", err.message || "Unknown error");
         // Clear invalid token
         localStorage.removeItem("token");
         setUser(null);
@@ -110,15 +128,15 @@ function App() {
   };
 
   const handleLogout = () => {
+    // Track logout
+    trackLogout();
     // Clear token from localStorage
     localStorage.removeItem("token");
     // Clear state
     setUser(null);
     setDashboardData(null);
-    // Optional: call backend logout
-    fetch(`${API_BASE_URL}/auth/logout`).catch(() => {});
-    // Force reload to ensure clean state
-    window.location.reload();
+    // Redirect to backend logout (will clear session and redirect to OpenID logout)
+    window.location.href = `${API_BASE_URL}/auth/logout`;
   };
 
   return (
